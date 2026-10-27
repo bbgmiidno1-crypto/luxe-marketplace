@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Image as ImageIcon, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
-import { buttonClasses } from '../components/common/Button';
+import Button, { buttonClasses } from '../components/common/Button';
 import RevealOnScroll from '../components/common/RevealOnScroll';
 import ProductCard from '../components/product/ProductCard';
-import { demoProducts } from '../data/demoProducts';
+import { filterProducts } from '../lib/catalogue';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import type { CatalogueState } from '../hooks/useCatalogue';
 
 const trustItems = [
   {
@@ -24,13 +25,74 @@ const trustItems = [
   },
 ];
 
-export default function HomePage() {
+interface HomePageProps {
+  catalogue: CatalogueState;
+  searchQuery: string;
+  categorySlug: string | null;
+  onClearFilters: () => void;
+}
+
+interface StateMessageProps {
+  title: string;
+  text: string;
+  action?: ReactNode;
+}
+
+function StateMessage({ title, text, action }: StateMessageProps) {
+  return (
+    <div
+      role="status"
+      className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-gold-400/30 bg-onyx-900 px-6 py-12 text-center"
+    >
+      <p className="font-display text-2xl text-gold-300">{title}</p>
+      <p className="max-w-md text-sm leading-relaxed text-ivory-400">{text}</p>
+      {action}
+    </div>
+  );
+}
+
+function LoadingGrid() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading products"
+      className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4"
+    >
+      {Array.from({ length: 8 }, (_, index) => (
+        <div
+          key={index}
+          className="animate-pulse overflow-hidden rounded-lg border border-gold-400/10 bg-onyx-900"
+        >
+          <div className="aspect-[3/4] bg-onyx-800" />
+          <div className="space-y-3 p-3 md:p-4">
+            <div className="h-2 w-1/3 rounded bg-onyx-700" />
+            <div className="h-3 w-4/5 rounded bg-onyx-700" />
+            <div className="h-3 w-1/2 rounded bg-onyx-700" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HomePage({
+  catalogue,
+  searchQuery,
+  categorySlug,
+  onClearFilters,
+}: HomePageProps) {
   const reducedMotion = usePrefersReducedMotion();
   const parallaxRef = useRef<HTMLDivElement | null>(null);
+  const { status, data, notConfigured, reload } = catalogue;
 
-  // Lightweight parallax demo: one background layer moves slightly on scroll.
-  // It updates the transform directly (no React re-renders) and is disabled
-  // when the user prefers reduced motion.
+  const visibleProducts = useMemo(
+    () => filterProducts(data.products, { query: searchQuery, categorySlug }),
+    [data.products, searchQuery, categorySlug],
+  );
+
+  const hasDemo = data.products.some((product) => product.isDemo);
+  const filtersActive = searchQuery.trim() !== '' || categorySlug !== null;
+
   useEffect(() => {
     if (reducedMotion) return;
 
@@ -50,6 +112,72 @@ export default function HomePage() {
       cancelAnimationFrame(frame);
     };
   }, [reducedMotion]);
+
+  const renderCatalogue = () => {
+    if (status === 'loading') return <LoadingGrid />;
+
+    if (status === 'error') {
+      return (
+        <StateMessage
+          title="We couldn't load products"
+          text="Please check your connection and try again."
+          action={
+            <Button variant="outline" size="md" onClick={reload}>
+              Try again
+            </Button>
+          }
+        />
+      );
+    }
+
+    if (notConfigured) {
+      return (
+        <StateMessage
+          title="Catalogue is being set up"
+          text={
+            import.meta.env.DEV
+              ? 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then restart npm run dev.'
+              : 'New products will appear here soon.'
+          }
+        />
+      );
+    }
+
+    if (data.products.length === 0) {
+      return (
+        <StateMessage
+          title="No products yet"
+          text="New arrivals will appear here as soon as they are added."
+        />
+      );
+    }
+
+    if (visibleProducts.length === 0) {
+      return (
+        <StateMessage
+          title="No matching products"
+          text="Try a different search or category."
+          action={
+            filtersActive ? (
+              <Button variant="outline" size="md" onClick={onClearFilters}>
+                Clear filters
+              </Button>
+            ) : null
+          }
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+        {visibleProducts.map((product, index) => (
+          <RevealOnScroll key={product.id} delay={Math.min(index, 4) * 60}>
+            <ProductCard product={product} />
+          </RevealOnScroll>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -72,7 +200,7 @@ export default function HomePage() {
             </h1>
             <p className="animate-fade-up max-w-lg text-base leading-relaxed text-ivory-300 [animation-delay:120ms]">
               Discover fashion, jewellery, beauty, home, electronics and more, presented with
-              care. Layout preview only: the catalogue will be connected in a later part.
+              care.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <a href="#featured" className={buttonClasses({ variant: 'primary', size: 'lg' })}>
@@ -118,27 +246,30 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED PRODUCTS */}
+      {/* PRODUCTS */}
       <section id="featured" className="scroll-mt-28 mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
         <RevealOnScroll>
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-gold-400">Handpicked</p>
-              <h2 className="font-display text-3xl text-ivory-100 md:text-4xl">Featured Picks</h2>
+              <h2 className="font-display text-3xl text-ivory-100 md:text-4xl">Shop the Collection</h2>
             </div>
-            <p className="hidden text-xs text-ivory-400 md:block">
-              Demo products for layout preview only
-            </p>
+            {status === 'ready' && visibleProducts.length > 0 && (
+              <p className="text-xs text-ivory-400">
+                {visibleProducts.length} {visibleProducts.length === 1 ? 'product' : 'products'}
+              </p>
+            )}
           </div>
         </RevealOnScroll>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-          {demoProducts.map((product, index) => (
-            <RevealOnScroll key={product.id} delay={Math.min(index, 4) * 60}>
-              <ProductCard product={product} />
-            </RevealOnScroll>
-          ))}
-        </div>
+        {hasDemo && (
+          <div className="mb-6 rounded-md border border-gold-400/40 bg-onyx-900 px-4 py-3 text-xs uppercase tracking-[0.15em] text-gold-300">
+            Demo mode: sample products for preview only. They are not real inventory and cannot be
+            bought.
+          </div>
+        )}
+
+        {renderCatalogue()}
       </section>
     </div>
   );
