@@ -55,6 +55,7 @@ export function useCatalogue(): CatalogueState {
         if (cancelled) return;
         console.error('Catalogue failed to load:', error);
 
+        alert(error instanceof Error ? error.message : String(error));
         if (env.showDemoProducts) {
           setData(getDemoCatalogue());
           setStatus('ready');
