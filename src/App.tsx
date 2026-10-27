@@ -1,18 +1,18 @@
+
 import { Route, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import AnnouncementBar from './components/layout/AnnouncementBar';
 import CategoryNav from './components/layout/CategoryNav';
 import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 import LoadingScreen from './components/common/LoadingScreen';
 import { useCatalogue } from './hooks/useCatalogue';
 
 export default function App() {
-  // Short intro screen; it dismisses automatically.
   const [showIntro, setShowIntro] = useState(true);
-
-  // Shared storefront state: the Navbar search and the category row both feed the product list.
   const [searchQuery, setSearchQuery] = useState('');
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
 
@@ -33,7 +33,12 @@ export default function App() {
       {showIntro && <LoadingScreen />}
 
       <AnnouncementBar />
-      <Navbar searchValue={searchQuery} onSearchChange={setSearchQuery} />
+
+      <Navbar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
       <CategoryNav
         categories={catalogue.data.categories}
         activeSlug={categorySlug}
@@ -55,10 +60,17 @@ export default function App() {
           />
 
           <Route
+            path="/login"
+            element={<LoginPage />}
+          />
+
+          <Route
             path="*"
             element={
               <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-                <p className="font-display text-4xl text-gold-400">Page not found</p>
+                <p className="font-display text-4xl text-gold-400">
+                  Page not found
+                </p>
                 <p className="mt-3 text-ivory-400">
                   This page will be built in a later part.
                 </p>
