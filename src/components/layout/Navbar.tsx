@@ -12,12 +12,19 @@ const accountLinks = [
 const linkClass =
   'inline-flex items-center gap-2 text-sm text-ivory-300 transition hover:text-gold-300';
 
-export default function Navbar() {
+interface NavbarProps {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+}
+
+export default function Navbar({ searchValue, onSearchChange }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Placeholder: search is not connected to any data yet.
+  // Search filters the product list as the user types.
+  // Submitting the form (Enter) only scrolls to the product section.
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    document.getElementById('featured')?.scrollIntoView({ block: 'start' });
   };
 
   return (
@@ -38,6 +45,7 @@ export default function Navbar() {
                 <Menu className="h-5 w-5" aria-hidden="true" />
               )}
             </button>
+
             <Link to="/" aria-label="Go to home">
               <BrandLogo variant="full" size="sm" />
             </Link>
@@ -57,6 +65,7 @@ export default function Navbar() {
           <label htmlFor="site-search" className="sr-only">
             Search products
           </label>
+
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ivory-400"
@@ -65,6 +74,8 @@ export default function Navbar() {
             <input
               id="site-search"
               type="search"
+              value={searchValue}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search products, brands and more"
               className="w-full rounded-md border border-gold-400/20 bg-onyx-900 py-2.5 pl-10 pr-4 text-sm text-ivory-100 placeholder:text-ivory-400 transition focus:border-gold-400/60 focus:outline-none"
             />
@@ -73,7 +84,10 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <nav aria-label="Mobile menu" className="border-t border-gold-400/10 bg-onyx-900 md:hidden">
+        <nav
+          aria-label="Mobile menu"
+          className="border-t border-gold-400/10 bg-onyx-900 md:hidden"
+        >
           <ul className="mx-auto flex max-w-7xl flex-col px-4 py-2">
             <li>
               <Link
@@ -84,6 +98,7 @@ export default function Navbar() {
                 Home
               </Link>
             </li>
+
             {accountLinks.map(({ label, icon: Icon }) => (
               <li key={label}>
                 <a href="#" className="flex items-center gap-3 py-3 text-sm text-ivory-300">
