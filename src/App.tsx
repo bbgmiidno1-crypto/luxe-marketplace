@@ -32,4 +32,54 @@ export default function App() {
       {showIntro && <LoadingScreen />}
 
       <AnnouncementBar />
-      
+
+      <Navbar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      <CategoryNav
+        categories={catalogue.data.categories}
+        activeSlug={categorySlug}
+        onSelect={setCategorySlug}
+      />
+
+      <main className="flex-1">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomePage
+                catalogue={catalogue}
+                searchQuery={searchQuery}
+                categorySlug={categorySlug}
+                onClearFilters={handleClearFilters}
+              />
+            }
+          />
+
+          <Route
+            path="/login"
+            element={<LoginPage />}
+          />
+
+          <Route
+            path="*"
+            element={
+              <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+                <p className="font-display text-4xl text-gold-400">
+                  Page not found
+                </p>
+                <p className="mt-3 text-ivory-400">
+                  This page will be built in a later part.
+                </p>
+              </div>
+            }
+          />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
