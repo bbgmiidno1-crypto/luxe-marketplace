@@ -7,6 +7,8 @@ export const env = {
   appName: import.meta.env.VITE_APP_NAME || 'Luxe Marketplace',
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  // Demo products are OFF unless this is exactly "true".
+  showDemoProducts: import.meta.env.VITE_SHOW_DEMO_PRODUCTS === 'true',
 } as const;
 
 export const isSupabaseConfigured = Boolean(env.supabaseUrl && env.supabaseAnonKey);
